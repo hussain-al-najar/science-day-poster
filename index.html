@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>*{box-sizing:border-box}body{margin:0}</style>
+<title>Math Behind Your Feed</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Source+Sans+3:wght@400;600;700&display=swap">
+<style>
+  :root{
+    --bg:#fbf7f8; --surface:#ffffff; --fg:#24262b; --muted:#5d6370; --line:#ead9de;
+    --burg:#8a1538; --burg-ink:#8a1538; --teal:#0f766e; --gold:#f6c343; --hi:#fff3cc; --hi-fg:#5a4300;
+    --display:"Barlow Condensed","Bahnschrift","Arial Narrow",sans-serif;
+    --body:"Source Sans 3","Segoe UI",system-ui,sans-serif;
+    --math:"Cambria Math",Cambria,"Times New Roman",serif;
+  }
+  @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+    --bg:#17131a; --surface:#221b24; --fg:#eee8ec; --muted:#b4a9b1; --line:#3a2d36;
+    --burg-ink:#f08aa8; --teal:#5fd1c2; --hi:#3d3417; --hi-fg:#f6dc8c; color-scheme:dark } }
+  :root[data-theme="dark"]{
+    --bg:#17131a; --surface:#221b24; --fg:#eee8ec; --muted:#b4a9b1; --line:#3a2d36;
+    --burg-ink:#f08aa8; --teal:#5fd1c2; --hi:#3d3417; --hi-fg:#f6dc8c; color-scheme:dark }
+
+  body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:17px;line-height:1.5}
+  .band{background:linear-gradient(90deg,#5e0e27,#8a1538 40%,#8a1538 60%,#5e0e27);color:#fff;border-bottom:3px solid var(--gold)}
+  .wrap{max-width:720px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+  .band .wrap{padding-block:28px 26px}
+  .eyebrow{font-family:var(--display);letter-spacing:.14em;text-transform:uppercase;color:var(--gold);font-size:15px}
+  h1{font-family:var(--display);font-size:clamp(32px,8vw,46px);line-height:1.02;margin:6px 0 10px;text-wrap:balance}
+  .meta{font-size:15px;opacity:.92}
+  .meta b{color:var(--gold);font-weight:600}
+  main .wrap{padding-block:8px 48px;display:flex;flex-direction:column;gap:36px}
+  section{display:flex;flex-direction:column;gap:12px}
+  h2{font-family:var(--display);font-size:26px;color:var(--burg-ink);display:flex;align-items:center;gap:10px;margin:28px 0 0;text-wrap:balance}
+  h2 .n{flex:none;width:32px;height:32px;border-radius:50%;background:var(--burg);color:#fff;display:grid;place-items:center;font-size:18px}
+  p{margin:0;max-width:65ch}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px}
+  .muted{color:var(--muted);font-size:15px}
+  .math{font-family:var(--math);font-size:19px}
+
+  /* calculator */
+  .rate{display:grid;grid-template-columns:1fr;gap:10px}
+  .rrow{display:grid;grid-template-columns:70px 1fr 28px;align-items:center;gap:10px}
+  .rrow label{font-weight:600}
+  input[type=range]{width:100%;accent-color:var(--teal)}
+  .rrow output{font-variant-numeric:tabular-nums;font-weight:700;text-align:right}
+  .tbl{overflow-x:auto}
+  table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums;min-width:340px}
+  th,td{padding:8px 6px;text-align:center;border-bottom:1px solid var(--line)}
+  th{font-weight:600;color:var(--muted);font-size:14px}
+  td:first-child,th:first-child{text-align:left}
+  tr.best td{background:var(--hi);color:var(--hi-fg);font-weight:700}
+  .verdict{font-size:18px}
+  .verdict b{color:var(--teal)}
+  details{border-top:1px solid var(--line);padding-top:10px}
+  summary{cursor:pointer;color:var(--teal);font-weight:600}
+  summary:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+  .steps{font-family:var(--math);font-size:16px;line-height:1.7;margin-top:8px;overflow-x:auto;white-space:nowrap}
+
+  /* green ranking */
+  .items{display:flex;flex-direction:column;gap:8px}
+  .item{display:grid;grid-template-columns:28px 1fr auto;gap:10px;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg)}
+  .item .k{font-family:var(--display);font-size:20px;color:var(--burg-ink)}
+  .item small{display:block;color:var(--muted)}
+  .item .s{font-variant-numeric:tabular-nums;font-weight:700}
+
+  /* references */
+  ol.refs{margin:0;padding-left:1.6em;display:flex;flex-direction:column;gap:10px}
+  ol.refs a{color:var(--teal);word-break:break-word}
+  footer{color:var(--muted);font-size:14px;border-top:1px solid var(--line);padding-top:16px}
+  @media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<header class="band">
+  <div class="wrap">
+    <div class="eyebrow">Science Day · Community College of Qatar</div>
+    <h1>How Netflix, TikTok &amp; Spotify Use Math and AI</h1>
+    <div class="meta"><b>Student:</b> Hussain Nasser Al-Najar &nbsp;·&nbsp; <b>Course:</b> MATH 1342 &nbsp;·&nbsp; <b>Instructor:</b> Dr. Abdelhamid Djaouti</div>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+
+    <section>
+      <h2><span class="n">1</span>Be the algorithm</h2>
+      <p>Rate three films from 1 to 5. The page measures how close your taste is to Ali, Sara and Noor using cosine similarity, the same idea recommender systems use.</p>
+      <div class="card rate">
+        <div class="rrow"><label for="fa">Film A</label><input id="fa" type="range" min="1" max="5" value="5"><output id="oa">5</output></div>
+        <div class="rrow"><label for="fb">Film B</label><input id="fb" type="range" min="1" max="5" value="3"><output id="ob">3</output></div>
+        <div class="rrow"><label for="fc">Film C</label><input id="fc" type="range" min="1" max="5" value="1"><output id="oc">1</output></div>
+      </div>
+      <div class="card" style="display:flex;flex-direction:column;gap:12px">
+        <div class="tbl"><table>
+          <thead><tr><th>User</th><th>Film A</th><th>Film B</th><th>Film C</th><th>cos with you</th></tr></thead>
+          <tbody id="tb"></tbody>
+        </table></div>
+        <p class="verdict" id="verdict"></p>
+        <p class="math" style="text-align:center">cos θ = (A · B) / (‖A‖ ‖B‖)</p>
+        <details><summary>Show the calculation</summary><div class="steps" id="steps"></div></details>
+      </div>
+      <p class="muted">On the poster: Ali (5, 4, 1) and Sara (4, 5, 2) give cos = 42 / (√42 · √45) ≈ 0.97, while Ali and Noor (1, 2, 5) give ≈ 0.51.</p>
+    </section>
+
+    <section>
+      <h2><span class="n">2</span>Netflix Prize error</h2>
+      <p>Netflix's own system (Cinematch) had a test error of RMSE 0.9525. The winning team in 2009 reached 0.8567.</p>
+      <div class="card"><p class="math" style="text-align:center">(0.9525 − 0.8567) / 0.9525 = 0.1006 → 10.06% improvement</p></div>
+      <p class="muted">RMSE (root mean squared error) measures how far predicted ratings are from real ratings, so lower is better.</p>
+    </section>
+
+    <section>
+      <h2><span class="n">3</span>Try the "green" ranking score</h2>
+      <p>Our proposal ranks items by <span class="math">Score = P(like) − λ · Energy</span>. Move λ to see how much energy cost changes the order. The numbers are example values for illustration.</p>
+      <div class="card" style="display:flex;flex-direction:column;gap:12px">
+        <div class="rrow" style="grid-template-columns:70px 1fr 40px"><label for="lam">λ</label><input id="lam" type="range" min="0" max="1" step="0.05" value="0"><output id="olam">0.00</output></div>
+        <div class="items" id="items"></div>
+      </div>
+    </section>
+
+    <section>
+      <h2><span class="n">4</span>References</h2>
+      <ol class="refs">
+        <li>Netflix (2025). Q4 2024 Letter to Shareholders. <a href="https://ir.netflix.net/financials/quarterly-earnings/default.aspx" target="_blank" rel="noopener">ir.netflix.net</a></li>
+        <li>TikTok Newsroom (2021, Sept 27). Thanks a billion! <a href="https://newsroom.tiktok.com/en-us/1-billion-people-on-tiktok" target="_blank" rel="noopener">newsroom.tiktok.com</a></li>
+        <li>Spotify (2025). Q1 2025 Shareholder Deck. <a href="https://investors.spotify.com/financials/default.aspx" target="_blank" rel="noopener">investors.spotify.com</a></li>
+        <li>Gomez-Uribe, C. A., &amp; Hunt, N. (2015). The Netflix Recommender System: Algorithms, Business Value, and Innovation. ACM Transactions on Management Information Systems, 6(4). <a href="https://doi.org/10.1145/2843948" target="_blank" rel="noopener">doi.org/10.1145/2843948</a></li>
+        <li>Netflix Technology Blog (2017). Artwork Personalization at Netflix. <a href="https://netflixtechblog.com/artwork-personalization-c589f074ad76" target="_blank" rel="noopener">netflixtechblog.com</a></li>
+        <li>TikTok Newsroom (2020, June 18). How TikTok recommends videos #ForYou. <a href="https://newsroom.tiktok.com/en-us/how-tiktok-recommends-videos-for-you" target="_blank" rel="noopener">newsroom.tiktok.com</a></li>
+        <li>Liu, Z., et al. (2022). Monolith: Real Time Recommendation System With Collisionless Embedding Table. arXiv:2209.07663. <a href="https://arxiv.org/abs/2209.07663" target="_blank" rel="noopener">arxiv.org/abs/2209.07663</a></li>
+        <li>Jacobson, K., Murali, V., Newett, E., Whitman, B., &amp; Yon, R. (2016). Music Personalization at Spotify. Proceedings of ACM RecSys '16. <a href="https://doi.org/10.1145/2959100.2959120" target="_blank" rel="noopener">doi.org/10.1145/2959100.2959120</a></li>
+        <li>Koren, Y. (2009). The BellKor Solution to the Netflix Grand Prize. Overview of the competition: <a href="https://en.wikipedia.org/wiki/Netflix_Prize" target="_blank" rel="noopener">Netflix Prize (Wikipedia)</a></li>
+        <li>IEA (2020, Dec 11). The carbon footprint of streaming video: fact-checking the headlines. <a href="https://www.iea.org/commentaries/the-carbon-footprint-of-streaming-video-fact-checking-the-headlines" target="_blank" rel="noopener">iea.org</a></li>
+        <li>Netflix Technology Blog (2015). Per-Title Encode Optimization. <a href="https://netflixtechblog.com/per-title-encode-optimization-7e99442b62a2" target="_blank" rel="noopener">netflixtechblog.com</a></li>
+      </ol>
+    </section>
+
+    <footer>Science Day poster · MATH 1342 · Community College of Qatar</footer>
+  </div>
+</main>
+
+<script>
+(function(){
+  const users=[{n:"Ali",r:[5,4,1]},{n:"Sara",r:[4,5,2]},{n:"Noor",r:[1,2,5]}];
+  const $=id=>document.getElementById(id);
+  const dot=(a,b)=>a.reduce((s,x,i)=>s+x*b[i],0);
+  const norm=a=>Math.sqrt(dot(a,a));
+  function update(){
+    const me=[+$("fa").value,+$("fb").value,+$("fc").value];
+    $("oa").textContent=me[0];$("ob").textContent=me[1];$("oc").textContent=me[2];
+    const sims=users.map(u=>({...u,c:dot(me,u.r)/(norm(me)*norm(u.r))}));
+    const best=sims.reduce((a,b)=>b.c>a.c?b:a);
+    $("tb").innerHTML=sims.map(u=>`<tr class="${u===best?"best":""}"><td>${u.n}</td><td>${u.r[0]}</td><td>${u.r[1]}</td><td>${u.r[2]}</td><td>${u.c.toFixed(2)}</td></tr>`).join("");
+    $("verdict").innerHTML=`Your closest match is <b>${best.n}</b> (cos = ${best.c.toFixed(2)}), so the app would recommend what ${best.n} liked next.`;
+    $("steps").innerHTML=sims.map(u=>`${u.n}: (${me.join(", ")}) · (${u.r.join(", ")}) = ${dot(me,u.r)}; &nbsp;‖you‖ = √${dot(me,me)}, ‖${u.n}‖ = √${dot(u.r,u.r)}; &nbsp;cos = ${dot(me,u.r)} / (${norm(me).toFixed(3)} × ${norm(u.r).toFixed(3)}) = ${u.c.toFixed(3)}`).join("<br>");
+  }
+  ["fa","fb","fc"].forEach(id=>$(id).addEventListener("input",update));
+  update();
+
+  const items=[{t:"4K film on mobile data",p:.92,e:.9},{t:"HD episode, downloaded on Wi-Fi",p:.85,e:.3},{t:"Podcast, audio only",p:.70,e:.05},{t:"Short video playlist",p:.80,e:.5}];
+  function rank(){
+    const l=+$("lam").value;$("olam").textContent=l.toFixed(2);
+    const sc=items.map(i=>({...i,s:i.p-l*i.e})).sort((a,b)=>b.s-a.s);
+    $("items").innerHTML=sc.map((i,k)=>`<div class="item"><span class="k">${k+1}</span><span>${i.t}<small>P(like) = ${i.p.toFixed(2)} · Energy = ${i.e.toFixed(2)}</small></span><span class="s">${i.s.toFixed(2)}</span></div>`).join("");
+  }
+  $("lam").addEventListener("input",rank);rank();
+})();
+</script>
+</body>
+</html>
